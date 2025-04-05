@@ -1,31 +1,44 @@
 "use client";
 
 import { BASE_SEPOLIA_USDC_ADDRESS, BASE_USDC_ADDRESS } from "@/lib/constants";
-import { Button, Image, Link, Input, Divider } from "@nextui-org/react";
-import { useLogin, usePrivy } from "@privy-io/react-auth";
-import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import {
-  CopyIcon,
-  RefreshCcw,
+  useLogin,
+  usePrivy,
+  useSendTransaction,
+  useSignMessage,
+  useWallets,
+} from "@privy-io/react-auth";
+import {
   CheckIcon,
-  Pen,
-  Send,
   ChevronDown,
   ChevronUp,
-  LogOut,
-  BookOpen,
-  Github,
+  CopyIcon,
+  Pen,
+  Send,
 } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
-import { encodeFunctionData, erc20Abi, formatUnits, parseUnits } from "viem";
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import {
+  encodeFunctionData,
+  erc20Abi,
+  formatEther,
+  formatUnits,
+  parseUnits,
+} from "viem";
 import { base, baseSepolia } from "viem/chains";
-import { useChainId, useSwitchChain, useBalance, useReadContract } from "wagmi";
-import { formatEther } from "viem";
+import { useBalance, useReadContract } from "wagmi";
 
 export default function Home() {
   const { ready, authenticated, logout, user } = usePrivy();
   const { login } = useLogin();
-  const { client } = useSmartWallets();
+  const { wallets } = useWallets();
+
+  const embeddedWallet = wallets.find(
+    (wallet) => wallet.connectorType === "embedded"
+  );
+
+  const chainId = embeddedWallet?.chainId.toString()?.replace("eip155:", "");
 
   const [message, setMessage] = useState("");
   const [copiedWallet, setCopiedWallet] = useState<string | null>(null);
@@ -35,81 +48,33 @@ export default function Home() {
   const [embeddedWalletAddress, setEmbeddedWalletAddress] = useState<
     string | undefined
   >();
-  const [smartWalletAddress, setSmartWalletAddress] = useState<
-    string | undefined
-  >();
   const [usdcAmount, setUsdcAmount] = useState("");
   const [recipientAddress, setRecipientAddress] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  const { switchChain } = useSwitchChain();
-  const chainId = useChainId();
+  const { signMessage } = useSignMessage();
+  const { sendTransaction } = useSendTransaction();
 
-  const signMessage = async () => {
-    if (!client) {
-      console.error("No smart account client found");
-      return;
-    }
+  const [isSendingTransaction, setIsSendingTransaction] = useState(false);
+
+  const handleSendTransaction = async () => {
+    setIsSendingTransaction(true);
     try {
-      const signature = await client.signMessage({
-        message,
-      });
-      console.log("Signature", signature);
-      setSignedMessage(signature);
-    } catch (error) {
-      console.error("Error signing message:", error);
-      setSignedMessage("Error signing message");
-    }
-  };
-
-  const toggleChain = async () => {
-    if (!client) {
-      console.error("No smart account client found");
-      return;
-    }
-    switchChain({
-      chainId: chainId === baseSepolia.id ? base.id : baseSepolia.id,
-    });
-  };
-
-  const execTransaction = async () => {
-    setIsLoading(true);
-    if (!client) {
-      console.error("No smart account client found");
-      return;
-    }
-
-    setErrorMessage("");
-
-    // Convert USDC amount to smallest unit (6 decimal places)
-    const amount = parseUnits(usdcAmount, 6);
-
-    if (smartUsdcBalance && amount > smartUsdcBalance) {
-      setErrorMessage("Insufficient USDC balance");
-      return;
-    }
-
-    try {
-      const tx = await client.sendTransaction({
-        to:
-          chainId === baseSepolia.id
-            ? BASE_SEPOLIA_USDC_ADDRESS
-            : BASE_USDC_ADDRESS,
+      await sendTransaction({
+        to: recipientAddress as `0x${string}`,
         value: BigInt(0),
         data: encodeFunctionData({
           abi: erc20Abi,
           functionName: "transfer",
-          args: [recipientAddress as `0x${string}`, amount],
+          args: [recipientAddress as `0x${string}`, parseUnits(usdcAmount, 6)],
         }),
-        account: client.account,
       });
-      console.log("tx", tx);
     } catch (error) {
       console.error("Transaction failed:", error);
       setErrorMessage("Transaction failed. Please try again.");
+    } finally {
+      setIsSendingTransaction(false);
     }
-    setIsLoading(false);
   };
 
   const copyToClipboard = useCallback(
@@ -147,37 +112,21 @@ export default function Home() {
     if (user?.wallet?.address) {
       setEmbeddedWalletAddress(user.wallet.address);
     }
-    if (client?.account.address) {
-      setSmartWalletAddress(client.account.address);
-    }
-  }, [user, client]);
+  }, [user]);
 
   const { data: embeddedEthBalance } = useBalance({
     address: embeddedWalletAddress as `0x${string}`,
   });
 
-  const { data: smartEthBalance } = useBalance({
-    address: smartWalletAddress as `0x${string}`,
-  });
-
   const { data: embeddedUsdcBalance } = useReadContract({
     abi: erc20Abi,
     address:
-      chainId === baseSepolia.id
+      chainId === baseSepolia.id.toString()
         ? BASE_SEPOLIA_USDC_ADDRESS
         : BASE_USDC_ADDRESS,
     functionName: "balanceOf",
+    chainId: chainId === baseSepolia.id.toString() ? baseSepolia.id : base.id,
     args: [embeddedWalletAddress as `0x${string}`],
-  });
-
-  const { data: smartUsdcBalance } = useReadContract({
-    abi: erc20Abi,
-    address:
-      chainId === baseSepolia.id
-        ? BASE_SEPOLIA_USDC_ADDRESS
-        : BASE_USDC_ADDRESS,
-    functionName: "balanceOf",
-    args: [smartWalletAddress as `0x${string}`],
   });
 
   return (
@@ -186,96 +135,38 @@ export default function Home() {
         <div className="col-span-2 bg-gray-50 p-12 h-full flex flex-col lg:flex-row items-center justify-center space-y-2">
           <div className="flex flex-col justify-evenly h-full">
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <div className="text-sm font-semibold">Resources</div>
-                <div className="flex flex-row gap-2">
-                  <Link
-                    href="https://github.com/builders-garden/privy-smart-wallet-nextjs-starter"
-                    target="_blank"
-                  >
-                    <Button
-                      radius="sm"
-                      size="sm"
-                      className="bg-black text-white"
-                      startContent={<Github className="w-4 h-4" />}
-                    >
-                      Github
-                    </Button>
-                  </Link>
-                  <Link
-                    href="https://docs.privy.io/guide/react/wallets/smart-wallets/"
-                    target="_blank"
-                  >
-                    <Button
-                      radius="sm"
-                      size="sm"
-                      className="bg-transparent border-2 border-black text-black hover:bg-black hover:text-white"
-                      startContent={<BookOpen className="w-4 h-4" />}
-                    >
-                      Overview
-                    </Button>
-                  </Link>
-                  <Link
-                    href="https://docs.privy.io/guide/react/wallets/smart-wallets/configuration"
-                    target="_blank"
-                  >
-                    <Button
-                      radius="sm"
-                      size="sm"
-                      className="bg-transparent border-2 border-black text-black hover:bg-black hover:text-white"
-                      startContent={<BookOpen className="w-4 h-4" />}
-                    >
-                      Configuration
-                    </Button>
-                  </Link>
-                  <Link
-                    href="https://docs.privy.io/guide/react/wallets/smart-wallets/usage"
-                    target="_blank"
-                  >
-                    <Button
-                      radius="sm"
-                      size="sm"
-                      className="bg-transparent border-2 border-black text-black hover:bg-black hover:text-white"
-                      startContent={<BookOpen className="w-4 h-4" />}
-                    >
-                      Usage
-                    </Button>
-                  </Link>
-                </div>
-              </div>
               <div className="text-3xl lg:text-6xl font-black">
-                Privy AA Starter
+                Privy Starter
               </div>
               <div className="text-md lg:text-lg">
-                This app demonstrates how to use Privy Smart Wallets to sign and
-                execute transactions.
+                This app demonstrates how to use Privy Embedded Wallets to sign
+                and execute transactions.
               </div>
 
               {ready && !authenticated && (
-                <Button
-                  radius="sm"
-                  color="primary"
-                  className="bg-secondary text-white lg:w-fit w-full"
+                <button
+                  className="bg-black text-white w-fit rounded-md px-4 py-2 hover:bg-gray-800 transition-colors"
                   onClick={() => login()}
                 >
                   Start now
-                </Button>
+                </button>
               )}
               {ready && authenticated && (
-                <Button
-                  radius="sm"
-                  color="danger"
-                  className="w-fit"
+                <button
+                  className="bg-red-500 text-white w-fit rounded-md px-4 py-2 hover:bg-red-600 transition-colors"
                   onClick={handleLogout}
-                  startContent={<LogOut className="w-4 h-4" />}
                 >
                   Logout
-                </Button>
+                </button>
               )}
             </div>
             <div className="flex flex-row gap-2 items-center">
               <div className="text-sm">with ❤️ by</div>
-              <Link href="https://builders.garden" target="_blank">
+              <Link
+                href="https://builders.garden"
+                target="_blank"
+                className="hover:opacity-80 transition-opacity"
+              >
                 <Image
                   src="/images/bg-logo.svg"
                   alt="logo"
@@ -293,39 +184,46 @@ export default function Home() {
               <div className="flex flex-col gap-4 w-full">
                 <div className="flex flex-col gap-2 w-full">
                   <div className="flex flex-row gap-2">
-                    <div className="flex flex-row items-center gap-1 bg-secondary p-1 rounded-lg text-xs text-white font-medium">
+                    <div className="flex flex-row items-center gap-1 bg-gray-200 p-1 rounded-lg text-xs text-gray-800 font-medium">
                       Connected to{" "}
-                      <div className="flex flex-row gap-1 bg-white text-secondary p-1 rounded-md">
+                      <div
+                        className="flex flex-row gap-1 bg-white text-gray-800 p-1 rounded-md cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={async () => {
+                          if (embeddedWallet) {
+                            await embeddedWallet.switchChain(
+                              chainId === base.id.toString()
+                                ? baseSepolia.id
+                                : base.id
+                            );
+                          }
+                        }}
+                      >
                         <Image
                           src="/images/base-logo.png"
                           alt="base"
                           width={16}
                           height={16}
                         />
-                        {chainId === base.id ? "Base" : "Base Sepolia"}
+                        {chainId === baseSepolia.id.toString()
+                          ? "Base Sepolia"
+                          : "Base"}
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="bordered"
-                      color="secondary"
-                      className="hover:bg-secondary-50"
-                      onClick={() => toggleChain()}
-                    >
-                      <RefreshCcw className="w-4 h-4 mr-2" />
-                      Switch to {chainId === base.id ? "Base Sepolia" : "Base"}
-                    </Button>
                   </div>
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-col">
                       <div className="flex items-center">
-                        <Input
-                          size="sm"
-                          value={user.wallet?.address}
-                          label="Embedded Wallet"
-                          isReadOnly
-                          className="flex-grow"
-                          endContent={
+                        <div className="relative flex-grow">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Embedded Wallet
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={user.wallet?.address}
+                              readOnly
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
                             <button
                               onClick={() =>
                                 copyToClipboard(
@@ -333,6 +231,7 @@ export default function Home() {
                                   "embedded"
                                 )
                               }
+                              className="absolute right-2 top-2"
                             >
                               {copiedWallet === "embedded" ? (
                                 <CheckIcon className="w-4 h-4 text-green-500" />
@@ -340,8 +239,8 @@ export default function Home() {
                                 <CopyIcon className="w-4 h-4" />
                               )}
                             </button>
-                          }
-                        />
+                          </div>
+                        </div>
                       </div>
                       <div className="text-xs mt-1">
                         <span className="font-semibold">Balance:</span>
@@ -351,63 +250,31 @@ export default function Home() {
                           `, ${formatUnits(embeddedUsdcBalance, 6)} USDC`}
                       </div>
                     </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center">
-                        <Input
-                          size="sm"
-                          value={client?.account.address}
-                          label="Smart Wallet"
-                          isReadOnly
-                          className="flex-grow"
-                          endContent={
-                            <button
-                              onClick={() =>
-                                copyToClipboard(
-                                  client?.account.address || "",
-                                  "smart"
-                                )
-                              }
-                            >
-                              {copiedWallet === "smart" ? (
-                                <CheckIcon className="w-4 h-4 text-green-500" />
-                              ) : (
-                                <CopyIcon className="w-4 h-4" />
-                              )}
-                            </button>
-                          }
-                        />
-                      </div>
-                      <div className="text-xs mt-1">
-                        <span className="font-semibold">Balance:</span>
-                        {smartEthBalance &&
-                          `${formatEther(smartEthBalance.value)} ETH`}
-                        {smartUsdcBalance !== undefined &&
-                          `, ${formatUnits(smartUsdcBalance, 6)} USDC`}
-                      </div>
-                    </div>
                   </div>
                 </div>
                 <div className="text-lg font-semibold">Operations</div>
                 <div className="flex flex-col gap-1">
                   <div className="text-sm font-semibold">Sign Message</div>
                   <div className="flex flex-row gap-2 w-full items-center">
-                    <Input
-                      size="sm"
+                    <input
+                      type="text"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="Enter message to sign"
-                      className="flex-grow"
+                      className="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <Button
-                      size="sm"
-                      variant="solid"
-                      color="primary"
-                      onClick={() => signMessage()}
-                      startContent={<Pen className="w-4 h-4" />}
-                      isDisabled={!message.trim()}
+                    <button
+                      className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => {
+                        signMessage({ message }).then((signature) => {
+                          setSignedMessage(signature.signature);
+                        });
+                      }}
+                      disabled={!message.trim()}
                     >
+                      <Pen className="w-4 h-4" />
                       Sign Message
-                    </Button>
+                    </button>
                   </div>
 
                   {signedMessage && (
@@ -421,84 +288,84 @@ export default function Home() {
                           : `${signedMessage.slice(0, 50)}...`}
                       </div>
                       <div className="flex flex-row gap-2 mt-1">
-                        <Button
-                          size="sm"
-                          variant="light"
+                        <button
+                          className="bg-gray-100 text-gray-800 px-3 py-1 rounded-md hover:bg-gray-200 transition-colors flex items-center gap-1"
                           onClick={copySignedMessage}
-                          startContent={
-                            copiedSignedMessage ? (
-                              <CheckIcon className="w-4 h-4" />
-                            ) : (
-                              <CopyIcon className="w-4 h-4" />
-                            )
-                          }
                         >
+                          {copiedSignedMessage ? (
+                            <CheckIcon className="w-4 h-4" />
+                          ) : (
+                            <CopyIcon className="w-4 h-4" />
+                          )}
                           {copiedSignedMessage
                             ? "Copied!"
                             : "Copy to Clipboard"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="light"
+                        </button>
+                        <button
+                          className="bg-gray-100 text-gray-800 px-3 py-1 rounded-md hover:bg-gray-200 transition-colors flex items-center gap-1"
                           onClick={toggleSignedMessageExpansion}
-                          startContent={
-                            isSignedMessageExpanded ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )
-                          }
                         >
+                          {isSignedMessageExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
                           {isSignedMessageExpanded ? "Collapse" : "Expand"}
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
-                <Divider />
+                <div className="h-px bg-gray-200 my-4"></div>
                 <div className="flex flex-col gap-2">
                   <div className="text-sm font-semibold">
                     Send USDC Transaction
                   </div>
                   <div className="flex flex-row gap-2">
-                    <Input
-                      size="sm"
-                      value={usdcAmount}
-                      onChange={(e) => setUsdcAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      className="w-1/3"
-                      label="USDC Amount"
-                    />
-                    <Input
-                      size="sm"
-                      value={recipientAddress}
-                      onChange={(e) => setRecipientAddress(e.target.value)}
-                      placeholder="Enter recipient address"
-                      label="Recipient Address"
-                    />
+                    <div className="w-1/3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        USDC Amount
+                      </label>
+                      <input
+                        type="number"
+                        value={usdcAmount}
+                        onChange={(e) => setUsdcAmount(e.target.value)}
+                        placeholder="Enter amount"
+                        min="0"
+                        step="0.1"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex-grow">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Recipient Address
+                      </label>
+                      <input
+                        type="text"
+                        value={recipientAddress}
+                        onChange={(e) => setRecipientAddress(e.target.value)}
+                        placeholder="Enter recipient address"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
-                  <Button
-                    size="sm"
-                    color="primary"
-                    onClick={() => execTransaction()}
-                    startContent={<Send className="w-4 h-4" />}
-                    isLoading={isLoading}
-                    className="w-full"
-                    isDisabled={
+                  <button
+                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                    disabled={
+                      isSendingTransaction ||
                       !usdcAmount ||
                       !recipientAddress ||
-                      smartUsdcBalance === undefined ||
-                      smartUsdcBalance < parseUnits(usdcAmount, 6)
+                      embeddedUsdcBalance === undefined ||
+                      embeddedUsdcBalance < parseUnits(usdcAmount, 6)
                     }
+                    onClick={handleSendTransaction}
                   >
-                    Send USDC
-                  </Button>
-                  {smartUsdcBalance !== undefined &&
+                    <Send className="w-4 h-4" />
+                    {isSendingTransaction ? "Sending..." : "Send USDC"}
+                  </button>
+                  {embeddedUsdcBalance !== undefined &&
                     parseFloat(usdcAmount) > 0 &&
-                    smartUsdcBalance < parseUnits(usdcAmount, 6) && (
+                    embeddedUsdcBalance < parseUnits(usdcAmount, 6) && (
                       <div className="text-red-500 text-xs text-center mt-1">
                         Insufficient USDC balance
                       </div>
