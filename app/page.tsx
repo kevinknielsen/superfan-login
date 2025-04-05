@@ -138,6 +138,13 @@ export default function Home() {
         <div className="col-span-2 bg-gray-50 p-12 h-full flex flex-col lg:flex-row items-center justify-center space-y-2">
           <div className="flex flex-col justify-evenly h-full">
             <div className="flex flex-col gap-4">
+              <a
+                href="https://github.com/builders-garden/privy-advanced-wallets"
+                target="_blank"
+                className="text-xs text-gray-500 hover:text-gray-700 transition-colors underline"
+              >
+                Github Repository
+              </a>
               <div className="text-3xl lg:text-6xl font-black">
                 Privy Starter
               </div>
