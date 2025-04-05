@@ -61,7 +61,10 @@ export default function Home() {
     setIsSendingTransaction(true);
     try {
       await sendTransaction({
-        to: recipientAddress as `0x${string}`,
+        to:
+          chainId === baseSepolia.id.toString()
+            ? BASE_SEPOLIA_USDC_ADDRESS
+            : BASE_USDC_ADDRESS,
         value: BigInt(0),
         data: encodeFunctionData({
           abi: erc20Abi,
