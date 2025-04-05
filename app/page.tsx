@@ -252,6 +252,17 @@ export default function Home() {
                         {embeddedUsdcBalance !== undefined &&
                           `, ${formatUnits(embeddedUsdcBalance, 6)} USDC`}
                       </div>
+                      {chainId === baseSepolia.id.toString() && (
+                        <div className="text-xs mt-1">
+                          <a
+                            href="https://faucet.circle.com/"
+                            target="_blank"
+                            className="text-blue-500 hover:text-blue-600 transition-colors underline"
+                          >
+                            USDC Sepolia Faucet
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
