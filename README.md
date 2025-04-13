@@ -49,7 +49,7 @@ This starter kit demonstrates:
 1. Clone the repository:
 
 ```bash
-git clone [your-repo-url]
+git clone https://github.com/builders-garden/privy-advanced-wallets
 ```
 
 2. Install dependencies:
@@ -59,10 +59,11 @@ yarn install
 ```
 
 3. Set up your environment variables:
-   Create a `.env.local` file in the root directory and add your Privy App ID:
+   
+   Create a `.env.local` file in the root directory and add your Privy App ID (learn how to get one [here](https://docs.privy.io/basics/get-started/dashboard/create-new-app)):
 
 ```
-NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id_here
+NEXT_PUBLIC_PRIVY_APP_ID=your_app_id_here
 ```
 
 4. Run the development server:
