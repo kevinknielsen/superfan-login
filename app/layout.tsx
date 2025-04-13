@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { Raleway } from "next/font/google";
 import "./globals.css";
-import Providers from "@/components/providers";
+import Providers from "@/components/Providers";
 
 const raleway = Raleway({
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Privy AA Starter",
+  title: "Onchain Webapp Starter",
   description: "Next.js starter with Privy Embedded Wallets and Smart Wallets",
 };
 
