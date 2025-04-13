@@ -130,6 +130,7 @@ The application is built using modular components that handle specific functiona
 
 - Programmable wallets that can execute complex transactions
 - Gas sponsorship capabilities
+  - [How to setup a Coinbase Paymaster](https://docs.cdp.coinbase.com/paymaster/docs/paymaster-bundler-qs-ui)
 - Transaction batching
 - Recovery mechanisms
 
