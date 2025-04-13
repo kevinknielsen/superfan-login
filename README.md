@@ -59,7 +59,7 @@ yarn install
 ```
 
 3. Set up your environment variables:
-   
+
    Create a `.env.local` file in the root directory and add your Privy App ID (learn how to get one [here](https://docs.privy.io/basics/get-started/dashboard/create-new-app)):
 
 ```
@@ -122,6 +122,8 @@ The application is built using modular components that handle specific functiona
 
 - Users can sign in using email or social login
 - Privy handles the creation of embedded wallets
+- WAGMI manages the wallet connection to Base and Base Sepolia
+  - [How to integrate Privy with WAGMI](https://docs.privy.io/wallets/connectors/ethereum/integrations/wagmi#integrating-with-wagmi)
 - Session management is handled automatically
 
 ### Smart Wallets
