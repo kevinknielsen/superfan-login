@@ -4,6 +4,13 @@ import { erc20Abi, formatEther, formatUnits } from "viem";
 import { base, baseSepolia } from "viem/chains";
 import { useBalance, useReadContract } from "wagmi";
 
+/**
+ * Props interface for the SmartWalletInfo component
+ * @param smartWalletAddress - The address of the smart wallet
+ * @param chainId - The current chain ID (e.g., "84532" for Base Sepolia)
+ * @param copiedWallet - The type of wallet that was copied (null if none)
+ * @param onCopyWallet - Callback function when wallet address is copied
+ */
 interface SmartWalletInfoProps {
   smartWalletAddress: string | undefined;
   chainId: string | undefined;
@@ -11,17 +18,27 @@ interface SmartWalletInfoProps {
   onCopyWallet: (address: string, type: string) => void;
 }
 
+/**
+ * SmartWalletInfo Component
+ *
+ * This component displays information about the smart wallet, including:
+ * 1. The wallet address with copy functionality
+ * 2. The wallet's ETH and USDC balances
+ * 3. A link to the USDC faucet on testnet
+ */
 export default function SmartWalletInfo({
   smartWalletAddress,
   chainId,
   copiedWallet,
   onCopyWallet,
 }: SmartWalletInfoProps) {
+  // Fetch the smart wallet's ETH balance
   const { data: smartWalletEthBalance } = useBalance({
     address: smartWalletAddress as `0x${string}`,
     chainId: chainId === baseSepolia.id.toString() ? baseSepolia.id : base.id,
   });
 
+  // Fetch the smart wallet's USDC balance using the ERC20 contract
   const { data: smartWalletUsdcBalance } = useReadContract({
     abi: erc20Abi,
     address:
@@ -36,6 +53,7 @@ export default function SmartWalletInfo({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-col">
+        {/* Smart wallet address display with copy functionality */}
         <div className="flex items-center">
           <div className="relative flex-grow">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -45,6 +63,7 @@ export default function SmartWalletInfo({
               <div className="w-full px-3 py-2 border border-gray-300 rounded-md">
                 {smartWalletAddress}
               </div>
+              {/* Copy button with success indicator */}
               <button
                 onClick={() => onCopyWallet(smartWalletAddress || "", "smart")}
                 className="absolute right-2 top-2"
@@ -58,6 +77,7 @@ export default function SmartWalletInfo({
             </div>
           </div>
         </div>
+        {/* Display wallet balances */}
         <div className="text-xs mt-1">
           <span className="font-semibold">Balance:</span>
           {smartWalletEthBalance &&
@@ -65,6 +85,7 @@ export default function SmartWalletInfo({
           {smartWalletUsdcBalance !== undefined &&
             `, ${formatUnits(smartWalletUsdcBalance, 6)} USDC`}
         </div>
+        {/* Display USDC faucet link on testnet */}
         {chainId === baseSepolia.id.toString() && (
           <div className="text-xs mt-1">
             <a

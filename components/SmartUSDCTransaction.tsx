@@ -6,21 +6,37 @@ import { encodeFunctionData, erc20Abi, parseUnits } from "viem";
 import { base, baseSepolia } from "viem/chains";
 import { useReadContract } from "wagmi";
 
+/**
+ * Props interface for the SmartUSDCTransaction component
+ * @param chainId - The current chain ID (e.g., "84532" for Base Sepolia)
+ * @param smartWalletAddress - The address of the smart wallet
+ */
 interface SmartUSDCTransactionProps {
   chainId: string | undefined;
   smartWalletAddress: string | undefined;
 }
 
+/**
+ * SmartUSDCTransaction Component
+ *
+ * This component allows users to send USDC tokens using their smart wallet.
+ * It provides functionality for:
+ * 1. Checking the smart wallet's USDC balance
+ * 2. Sending USDC to a recipient address
+ * 3. Handling transaction states and errors
+ */
 export default function SmartUSDCTransaction({
   chainId,
   smartWalletAddress,
 }: SmartUSDCTransactionProps) {
-  const [usdcAmount, setUsdcAmount] = useState("");
-  const [recipientAddress, setRecipientAddress] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isSendingTransaction, setIsSendingTransaction] = useState(false);
-  const { client } = useSmartWallets();
+  // State management for the component
+  const [usdcAmount, setUsdcAmount] = useState(""); // Amount of USDC to send
+  const [recipientAddress, setRecipientAddress] = useState(""); // Recipient's address
+  const [errorMessage, setErrorMessage] = useState(""); // Error message display
+  const [isSendingTransaction, setIsSendingTransaction] = useState(false); // Transaction status
+  const { client } = useSmartWallets(); // Hook to access smart wallet functionality
 
+  // Read the smart wallet's USDC balance using the ERC20 contract
   const { data: smartWalletUsdcBalance } = useReadContract({
     abi: erc20Abi,
     address:
@@ -32,22 +48,31 @@ export default function SmartUSDCTransaction({
     args: [smartWalletAddress as `0x${string}`],
   });
 
+  /**
+   * Handles the USDC transfer transaction
+   * 1. Encodes the transfer function call
+   * 2. Sends the transaction using the smart wallet client
+   * 3. Handles success and error states
+   */
   const handleSendTransaction = async () => {
     if (!client) return;
 
     setIsSendingTransaction(true);
     try {
+      // Determine the correct USDC contract address based on the chain
       const usdcAddress =
         chainId === baseSepolia.id.toString()
           ? BASE_SEPOLIA_USDC_ADDRESS
           : BASE_USDC_ADDRESS;
 
+      // Encode the transfer function call
       const data = encodeFunctionData({
         abi: erc20Abi,
         functionName: "transfer",
         args: [recipientAddress as `0x${string}`, parseUnits(usdcAmount, 6)],
       });
 
+      // Send the transaction using the smart wallet
       await client.sendTransaction({
         to: usdcAddress,
         value: BigInt(0),
@@ -64,6 +89,7 @@ export default function SmartUSDCTransaction({
   return (
     <div className="flex flex-col gap-2">
       <div className="text-sm font-semibold">Send USDC with Smart Wallet</div>
+      {/* Input fields for USDC amount and recipient address */}
       <div className="flex flex-row gap-2">
         <div className="w-1/3">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -92,6 +118,7 @@ export default function SmartUSDCTransaction({
           />
         </div>
       </div>
+      {/* Send USDC button with various disabled states */}
       <button
         className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
         disabled={
@@ -107,6 +134,7 @@ export default function SmartUSDCTransaction({
         <Send className="w-4 h-4" />
         {isSendingTransaction ? "Sending..." : "Send USDC"}
       </button>
+      {/* Display insufficient balance warning */}
       {smartWalletUsdcBalance !== undefined &&
         parseFloat(usdcAmount) > 0 &&
         smartWalletUsdcBalance < parseUnits(usdcAmount, 6) && (
@@ -114,6 +142,7 @@ export default function SmartUSDCTransaction({
             Insufficient USDC balance
           </div>
         )}
+      {/* Display error message if transaction fails */}
       {errorMessage && (
         <div className="text-red-500 text-xs text-center mt-1">
           {errorMessage}

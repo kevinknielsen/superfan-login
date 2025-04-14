@@ -11,6 +11,16 @@ import { base, baseSepolia } from "viem/chains";
 
 const queryClient = new QueryClient();
 
+/**
+ * Providers component that wraps the entire application with necessary providers
+ * This component sets up:
+ * 1. PrivyProvider - For authentication and wallet management
+ * 2. SmartWalletsProvider - For smart wallet functionality
+ * 3. QueryClientProvider - For React Query state management
+ * 4. WagmiProvider - For Ethereum interaction
+ *
+ * @param children - The child components to be wrapped by the providers
+ */
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <PrivyProvider
