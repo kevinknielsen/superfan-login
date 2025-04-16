@@ -21,18 +21,17 @@ export default function Header() {
       <div className="flex flex-col gap-4">
         {/* GitHub repository link */}
         <a
-          href="https://github.com/builders-garden/privy-advanced-wallets"
+          href="https://github.com/kevinknielsen/superfan-login"
           target="_blank"
           className="text-xs text-gray-500 hover:text-gray-700 transition-colors underline"
         >
-          Github Repository
+          Login Repository [Hackathon]
         </a>
         {/* Application title */}
-        <div className="text-3xl lg:text-6xl font-black">Privy Starter</div>
+        <div className="text-3xl lg:text-6xl font-black">Superfan One</div>
         {/* Application description */}
         <div className="text-md lg:text-lg">
-          This app demonstrates how to use Privy Embedded Wallets to sign and
-          execute transactions.
+          This is the login experience for Superfan One, allowing investors to onboard with their email on Privy and fund their wallet.  
         </div>
 
         {/* Login button - shown when not authenticated */}
@@ -56,14 +55,7 @@ export default function Header() {
       </div>
       {/* Builders Garden attribution */}
       <div className="flex flex-row gap-2 items-center">
-        <div className="text-sm">with ❤️ by</div>
-        <Link
-          href="https://builders.garden"
-          target="_blank"
-          className="hover:opacity-80 transition-opacity"
-        >
-          <Image src="/images/bg-logo.svg" alt="logo" width={75} height={75} />
-        </Link>
+        <div className="text-sm">Kevin Nielsen</div>
       </div>
     </div>
   );

@@ -106,10 +106,10 @@ export default function USDCTransaction({
 
   return (
     <div className="flex flex-col gap-2">
+      {/* Temporarily commented out Send USDC with Embedded Wallet section
       <div className="text-sm font-semibold">
         Send USDC with Embedded Wallet
       </div>
-      {/* Input fields for USDC amount and recipient address */}
       <div className="flex flex-row gap-2">
         <div className="w-1/3">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -138,7 +138,6 @@ export default function USDCTransaction({
           />
         </div>
       </div>
-      {/* Send USDC button with various disabled states */}
       <button
         className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
         disabled={
@@ -153,7 +152,6 @@ export default function USDCTransaction({
         <Send className="w-4 h-4" />
         {isSendingTransaction ? "Sending..." : "Send USDC"}
       </button>
-      {/* Display insufficient balance warning */}
       {embeddedUsdcBalance !== undefined &&
         parseFloat(usdcAmount) > 0 &&
         embeddedUsdcBalance < parseUnits(usdcAmount, 6) && (
@@ -161,12 +159,12 @@ export default function USDCTransaction({
             Insufficient USDC balance
           </div>
         )}
-      {/* Display error message if transaction fails */}
       {errorMessage && (
         <div className="text-red-500 text-xs text-center mt-1">
           {errorMessage}
         </div>
       )}
+      */}
     </div>
   );
 }

@@ -2,6 +2,10 @@ import { useSignMessage } from "@privy-io/react-auth";
 import { CheckIcon, ChevronDown, ChevronUp, CopyIcon, Pen } from "lucide-react";
 import { useState } from "react";
 
+interface SignMessageProps {
+  onMessageSigned: () => void;
+}
+
 /**
  * SignMessage Component
  *
@@ -11,7 +15,7 @@ import { useState } from "react";
  * 2. Signing the message using the embedded wallet
  * 3. Displaying and managing the signed message (copying, expanding/collapsing)
  */
-export default function SignMessage() {
+export default function SignMessage({ onMessageSigned }: SignMessageProps) {
   // State management for the component
   const [message, setMessage] = useState(""); // The message to be signed
   const [signedMessage, setSignedMessage] = useState(""); // The resulting signature
@@ -43,12 +47,13 @@ export default function SignMessage() {
   const handleSignMessage = async () => {
     const result = await signMessage({ message });
     setSignedMessage(result.signature);
+    onMessageSigned(); // Call the callback when message is signed
   };
 
   return (
     <div className="flex flex-col gap-1">
       <div className="text-sm font-semibold">
-        Sign Message with Embedded Wallet
+        Sign a Message to Test Your Wallet
       </div>
       {/* Input field for the message to be signed */}
       <div className="flex flex-row gap-2 w-full items-center">

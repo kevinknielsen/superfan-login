@@ -5,6 +5,9 @@ import { base, baseSepolia } from "viem/chains";
 import SignMessage from "./SignMessage";
 import USDCTransaction from "./USDCTransaction";
 import WalletInfo from "./WalletInfo";
+import { erc20Abi, formatUnits } from "viem";
+import { useReadContract } from "wagmi";
+import { BASE_SEPOLIA_USDC_ADDRESS, BASE_USDC_ADDRESS } from "@/lib/constants";
 
 /**
  * EmbeddedWallets Component
@@ -25,6 +28,12 @@ export default function EmbeddedWallets() {
   const [embeddedWallet, setEmbeddedWallet] = useState<
     ConnectedWallet | undefined
   >();
+  const [hasSignedMessage, setHasSignedMessage] = useState(false);
+
+  // Callback for when message is signed
+  const onMessageSigned = useCallback(() => {
+    setHasSignedMessage(true);
+  }, []);
 
   /**
    * Handles copying wallet addresses to clipboard
@@ -56,6 +65,22 @@ export default function EmbeddedWallets() {
   const currentChainId = embeddedWallet?.chainId
     .replace("eip155:", "")
     .toString();
+
+  // Get wallet balance to check if user has funds
+  const { data: embeddedUsdcBalance } = useReadContract({
+    abi: erc20Abi,
+    address:
+      currentChainId === baseSepolia.id.toString()
+        ? BASE_SEPOLIA_USDC_ADDRESS
+        : BASE_USDC_ADDRESS,
+    functionName: "balanceOf",
+    chainId: currentChainId === baseSepolia.id.toString() ? baseSepolia.id : base.id,
+    args: [embeddedWallet?.address as `0x${string}`],
+  });
+
+  // Check if user has completed all required steps
+  const hasBalance = embeddedUsdcBalance ? Number(formatUnits(embeddedUsdcBalance, 6)) > 0 : false;
+  const canContinue = hasSignedMessage && hasBalance;
 
   return (
     <div className="w-full lg:w-3/4">
@@ -105,15 +130,41 @@ export default function EmbeddedWallets() {
           />
         </div>
         {/* Embedded wallet operations section */}
-        <div className="text-lg font-semibold">Operations</div>
+        <div className="text-lg font-semibold">Onboarding Steps</div>
         {/* Message signing component */}
-        <SignMessage />
+        <SignMessage onMessageSigned={onMessageSigned} />
         <div className="h-px bg-gray-200 my-4"></div>
         {/* USDC transaction component */}
         <USDCTransaction
           chainId={currentChainId}
           embeddedWalletAddress={embeddedWallet?.address}
         />
+
+        {/* Continue Button */}
+        <div className="mt-8">
+          <button
+            className={`w-full py-4 rounded-lg text-lg font-semibold transition-all duration-200 ${
+              canContinue
+                ? "bg-blue-500 hover:bg-blue-600 text-white cursor-pointer"
+                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+            }`}
+            disabled={!canContinue}
+            onClick={() => {
+              if (canContinue) {
+                window.location.href = 'https://app.superfan.one/';
+              }
+            }}
+          >
+            {canContinue ? "Continue to App" : "Complete Required Steps to Continue"}
+          </button>
+          {!canContinue && (
+            <div className="mt-2 text-sm text-gray-600">
+              {!hasSignedMessage && !hasBalance && "Please sign the message and add funds to continue"}
+              {!hasSignedMessage && hasBalance && "Please sign the message to continue"}
+              {hasSignedMessage && !hasBalance && "Please add funds to continue"}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

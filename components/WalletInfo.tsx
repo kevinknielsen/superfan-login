@@ -3,6 +3,8 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 import { erc20Abi, formatEther, formatUnits } from "viem";
 import { base, baseSepolia } from "viem/chains";
 import { useBalance, useReadContract } from "wagmi";
+import { useState } from "react";
+import DepositOverlay from "./DepositOverlay";
 
 /**
  * Props interface for the WalletInfo component
@@ -32,6 +34,8 @@ export default function WalletInfo({
   copiedWallet,
   onCopyWallet,
 }: WalletInfoProps) {
+  const [isDepositOpen, setIsDepositOpen] = useState(false);
+
   // Fetch the embedded wallet's ETH balance
   const { data: embeddedEthBalance } = useBalance({
     address: embeddedWalletAddress as `0x${string}`,
@@ -54,7 +58,7 @@ export default function WalletInfo({
     <div className="flex flex-col gap-2">
       <div className="flex flex-col">
         {/* Embedded wallet address display with copy functionality */}
-        <div className="flex items-center">
+        <div className="flex items-center justify-between">
           <div className="relative flex-grow">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Embedded Wallet
@@ -78,14 +82,20 @@ export default function WalletInfo({
               </button>
             </div>
           </div>
+          <button
+            onClick={() => setIsDepositOpen(true)}
+            className="ml-2 px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm h-fit self-end"
+          >
+            Deposit
+          </button>
         </div>
         {/* Display wallet balances */}
         <div className="text-xs mt-1">
           <span className="font-semibold">Balance:</span>
           {embeddedEthBalance &&
-            ` ${formatEther(embeddedEthBalance.value)} ETH`}
+            ` ${Number(formatEther(embeddedEthBalance.value)).toFixed(2)} ETH`}
           {embeddedUsdcBalance !== undefined &&
-            `, ${formatUnits(embeddedUsdcBalance, 6)} USDC`}
+            `, ${Number(formatUnits(embeddedUsdcBalance, 6)).toFixed(2)} USDC`}
         </div>
         {/* Display USDC faucet link on testnet */}
         {chainId === baseSepolia.id.toString() && (
@@ -100,6 +110,12 @@ export default function WalletInfo({
           </div>
         )}
       </div>
+
+      <DepositOverlay
+        isOpen={isDepositOpen}
+        onClose={() => setIsDepositOpen(false)}
+        walletAddress={embeddedWalletAddress || ""}
+      />
     </div>
   );
 }

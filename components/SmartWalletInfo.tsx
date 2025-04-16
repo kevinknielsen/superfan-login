@@ -81,9 +81,9 @@ export default function SmartWalletInfo({
         <div className="text-xs mt-1">
           <span className="font-semibold">Balance:</span>
           {smartWalletEthBalance &&
-            ` ${formatEther(smartWalletEthBalance.value)} ETH`}
+            ` ${Number(formatEther(smartWalletEthBalance.value)).toFixed(2)} ETH`}
           {smartWalletUsdcBalance !== undefined &&
-            `, ${formatUnits(smartWalletUsdcBalance, 6)} USDC`}
+            `, ${Number(formatUnits(smartWalletUsdcBalance, 6)).toFixed(2)} USDC`}
         </div>
         {/* Display USDC faucet link on testnet */}
         {chainId === baseSepolia.id.toString() && (
