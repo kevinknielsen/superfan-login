@@ -1,5 +1,5 @@
 import { BASE_SEPOLIA_USDC_ADDRESS, BASE_USDC_ADDRESS } from "@/lib/constants";
-import { erc20Abi } from "viem";
+import { erc20Abi, formatUnits } from "viem";
 import { base, baseSepolia } from "viem/chains";
 import { useReadContract } from "wagmi";
 
@@ -41,7 +41,10 @@ export default function USDCTransaction({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* UI temporarily disabled */}
+      <div className="text-sm">
+        Available USDC Balance: {embeddedUsdcBalance ? formatUnits(embeddedUsdcBalance, 6) : '0.00'}
+      </div>
+      {/* Additional UI components will be implemented in future updates */}
     </div>
   );
 }
