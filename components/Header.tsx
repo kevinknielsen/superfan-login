@@ -1,6 +1,4 @@
 import { useLogin, usePrivy } from "@privy-io/react-auth";
-import Image from "next/image";
-import Link from "next/link";
 
 /**
  * Header Component
